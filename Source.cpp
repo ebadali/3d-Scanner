@@ -3,7 +3,8 @@
 #include <string>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-
+#include <pcl/console/parse.h>
+#include <pcl/common/transforms.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/registration/icp.h>
@@ -148,25 +149,41 @@ int main (int argc, char** argv)
 		return 0;
 	}
 	  pcl::visualization::CloudViewer viewer("My Test Cloud");
-	 viewer.showCloud(data_input);
+	  viewer.showCloud(data_input);
 	
 	  pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
 	  icp.setInputCloud(data_input);
 	  icp.setInputTarget(data_target);
-	  pcl::PointCloud<pcl::PointXYZ> Final;
-	  icp.align(Final);
-	  std::cout << "has converged:" << icp.hasConverged() << " score: " <<
-	  icp.getFitnessScore() << std::endl;
-	  std::cout << icp.getFinalTransformation() << std::endl;
+	  pcl::PointCloud<pcl::PointXYZ> ::Ptr Final;
+	  double fitness = 1245;
+	  Eigen::Matrix4f transform;
+	  //Matrix4x4 transform;
+	  while(fitness > 2){
+		  icp.align(*Final);
+		  std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+		  icp.getFitnessScore() << std::endl;
+		  std::cout << icp.getFinalTransformation() << std::endl;
+		  transform = icp.getFinalTransformation();
+		  fitness = icp.getFitnessScore();
 
-	int f = 0 ; 
-	cin >>f;
-	return (0);
+
+		  // Executing the transformation
+		  pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+		  // You can either apply transform_1 or transform_2; they are the same
+		  pcl::transformPointCloud (*Final, *transformed_cloud, transform);
+
+		   viewer.showCloud(transformed_cloud);
+
+		   *Final = *transformed_cloud;
+
+//		  pcl::transformPointCloud (Final, transform, transform);
+	  }
+	 
+	  int f = 0 ; 
+	  cin >>f;
+	  return (0);
 	
 }
-
-
-
 
 //typedef pcl::PointXYZ PointT;
 //typedef pcl::PointCloud<PointT> PointCloudT;
